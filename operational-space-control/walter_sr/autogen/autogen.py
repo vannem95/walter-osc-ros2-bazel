@@ -22,7 +22,7 @@ class AutoGen():
 
         # Parse Configuration YAML File:
         r = Runfiles.Create()
-        with open(r.Rlocation("operational-space-controller/config/walter_sr/walter_sr_config.yaml"), "r") as file:
+        with open(r.Rlocation("walter-osc-ros2-bazel/config/walter_sr/walter_sr_config.yaml"), "r") as file:
             config = yaml.safe_load(file)
 
         # Get Weight Configuration:

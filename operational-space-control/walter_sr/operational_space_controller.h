@@ -33,6 +33,10 @@
 #include "operational-space-control/walter_sr/containers.h"
 
 
+#include "rclcpp/rclcpp.hpp"
+
+
+
 using namespace operational_space_controller::constants;
 using namespace operational_space_controller::containers;
 using namespace operational_space_controller::aliases;
