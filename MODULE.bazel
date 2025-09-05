@@ -28,6 +28,40 @@ git_override(
     commit = "b0a0544ccdb13db7fdb2b509ef58d04c5b7c72c9",
 )
 
+# OSQP Cpp Wrapper:
+bazel_dep(name = "osqp-cpp", version = "0.0.0-20231004-4343373.bcr.1")
+
+# OSQP: (explicit instead of transitive from osqp-cpp)
+bazel_dep(name = "osqp", version = "0.6.3.bcr.2")
+
+# MoJoCo:
+bazel_dep(name = "mujoco-bazel")
+archive_override(
+    module_name = "mujoco-bazel",
+    strip_prefix = "mujoco-bazel-main",
+    urls = ["https://github.com/jeh15/mujoco-bazel/archive/refs/heads/main.zip"],
+    integrity = "sha256-GWLqAiunkC0Pfx61ayaQoPrC62O02tnh2gqM9z2Wm/o=",
+)
+
+# Mujoco Models:
+bazel_dep(name = "mujoco-models")
+archive_override(
+    module_name = "mujoco-models",
+    strip_prefix = "mujoco-models-main",
+    urls = ["https://github.com/vannem95/mujoco-models/archive/refs/heads/main.zip"]
+)
+
+
+# GLFW: (Visualize MuJoCo simulations)
+bazel_dep(name = "glfw-bazel")
+archive_override(
+    module_name = "glfw-bazel",
+    strip_prefix = "glfw-bazel-main",
+    urls = ["https://github.com/jeh15/glfw-bazel/archive/refs/heads/main.zip"],
+    integrity = "sha256-Gk5anHk3IXzREPrUpyYPweB9J0fAdbMt5Hlu5VCYTO0=",
+)
+
+
 # Python Toolchain:
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
 
@@ -36,6 +70,23 @@ python.toolchain(
     configure_coverage_tool = True,
     python_version = "3.10",      # rules_ros2 docs says I need to use Python 3.10 to match rules_ros2
 )
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    download_only = True,
+    hub_name = "pypi_operational-space-controller",
+    # We need to use the same version here as in the `python.toolchain` call.
+    python_version = "3.10",
+    requirements_lock = "//:requirements_lock.txt",
+)
+use_repo(pip, "pypi_operational-space-controller")
+
+# Pybind11:
+bazel_dep(name = "pybind11_bazel", version = "2.13.6")
+
+# Skylib:
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
+
 
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 use_repo(pip, "rules_ros2_pip_deps")
