@@ -34,7 +34,7 @@ bazel_dep(name = "osqp-cpp", version = "0.0.0-20231004-4343373.bcr.1")
 # OSQP: (explicit instead of transitive from osqp-cpp)
 bazel_dep(name = "osqp", version = "0.6.3.bcr.2")
 
-# MoJoCo:
+# MuJoCo:
 bazel_dep(name = "mujoco-bazel")
 archive_override(
     module_name = "mujoco-bazel",

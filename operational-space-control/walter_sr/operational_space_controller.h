@@ -34,7 +34,7 @@
 
 
 #include "rclcpp/rclcpp.hpp"
-
+#include "geometry_msgs/msg/pose.hpp"
 
 
 using namespace operational_space_controller::constants;
@@ -108,12 +108,50 @@ namespace {
         FunctionParams<f_SZ_ARG, f_SZ_RES, f_SZ_IW, f_SZ_W, optimization::f_sz, 1, optimization::f_sz, 4>;
 }
 
+
+
+
+
+
+
 //TODO(jeh15): Refactor all voids with absl::Status
-class OperationalSpaceController {
+class OperationalSpaceController: public rclcpp::Node {
     public:
-        OperationalSpaceController(std::filesystem::path xml_path, int control_rate_us = 2000, OsqpSettings osqp_settings = OsqpSettings()) : 
-            xml_path(xml_path), control_rate_us(control_rate_us), settings(osqp_settings) {}
-        ~OperationalSpaceController() {}
+        OperationalSpaceController() : Node("operational_space_controller_node"){
+
+        // OperationalSpaceController(std::filesystem::path xml_path, int control_rate_us = 2000, OsqpSettings osqp_settings = OsqpSettings()) : 
+        //     xml_path(xml_path), control_rate_us(control_rate_us), settings(osqp_settings) {}
+        // ~OperationalSpaceController() {}
+
+
+        // set control rate 
+        declare_parameter("control_rate_us", 2000);
+        this->control_rate_us = this->get_parameter("control_rate_us").as_int();
+
+        // Create default QoS Profile:
+        rclcpp::QoS qos_profile(10);
+        qos_profile.best_effort();
+
+
+        // Create Publisher Node:
+        command_publisher_ = this->create_publisher<geometry_msgs::msg::Pose>(
+            "/torque_command",
+            qos_profile
+        );
+
+        // Create Subscriber Node:
+        state_subscription_ = this->create_subscription<geometry_msgs::msg::Pose>(
+            "/state",
+            qos_profile,
+            [this](const Pose::SharedPtr msg) {
+                this->state_callback(msg);
+            }
+        );
+
+
+        this->initialize_command();        
+        }
+
 
         absl::Status initialize(State initial_state) {
             char error[1000];
@@ -606,13 +644,8 @@ class OperationalSpaceController {
 
             /* Consistent Execution Time: */
             void control_loop() {
-                using Clock = std::chrono::steady_clock;
-                auto next_time = Clock::now();
                 // Thread Loop:
                 while(running) {
-                    // Calculate next execution time first
-                    next_time += std::chrono::microseconds(control_rate_us);
-
                     /* Lock Guard Scope */
                     {   
                         std::lock_guard<std::mutex> lock(mutex);
@@ -633,19 +666,6 @@ class OperationalSpaceController {
                         
                         // Get torques from QP solution:
                         torque_command = solution(Eigen::seqN(optimization::dv_idx, optimization::u_size));
-                    }
-                    // Check for overrun and sleep until next execution time
-                    auto now = Clock::now();
-                    if (now < next_time) {
-                        std::this_thread::sleep_until(next_time);
-                    } 
-                    else {
-                        // Log overrun
-                        auto overrun = std::chrono::duration_cast<std::chrono::microseconds>(now - next_time);
-                        std::cout << "Operational Space Control Loop Execution Time Exceeded Control Rate: " 
-                                << overrun.count() << "us" << std::endl;
-                        // Reset next execution time to prevent cascading delays
-                        next_time = now;
                     }
                 }
             }
